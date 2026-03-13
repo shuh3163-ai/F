@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>场景图生成器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#f7f5f2; --white:#fff; --border:#e8e4df; --border2:#d4cfc9;
+    --text:#1a1814; --text2:#6b6560; --text3:#a8a29c;
+    --accent:#c8502a; --accent-bg:#fdf1ed;
+    --success:#2d7d4f; --success-bg:#edf7f1;
+    --radius:14px; --radius-sm:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans','Noto Sans SC',sans-serif;min-height:100vh;padding:32px 24px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-mark{width:38px;height:38px;background:var(--text);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+  .brand-name{font-size:17px;font-weight:600;letter-spacing:-.3px}
+  .status-pill{font-size:12px;padding:5px 12px;border-radius:20px;background:var(--success-bg);color:var(--success);font-weight:500;display:flex;align-items:center;gap:6px}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .main{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .card-head{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .card-head-dot{width:7px;height:7px;border-radius:50%;background:var(--border2)}
+  .card-body{padding:18px}
+  .upload-area{border:1.5px dashed var(--border2);border-radius:var(--radius-sm);padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .upload-area:hover{border-color:var(--accent);background:var(--accent-bg)}
+  .upload-area.has-img{padding:0;border-style:solid;border-color:var(--border2)}
+  .upload-area img{width:100%;border-radius:6px;display:block;max-height:220px;object-fit:contain;background:#f9f7f5}
+  .upload-icon{font-size:28px;margin-bottom:8px;opacity:.5}
+  .upload-label{font-size:13px;color:var(--text2)}
+  .upload-sub{font-size:11px;color:var(--text3);margin-top:4px}
+  #fileInput{display:none}
+  .ai-detect{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;display:none}
+  .ai-detect.show{display:block}
+  .ai-detect-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px}
+  .tag-row{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--text2)}
+  .tag.cat{background:#fdf1ed;border-color:#f5cfc3;color:#a03818}
+  .styles-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px}
+  .style-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+  .style-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;user-select:none}
+  .style-item:hover{border-color:var(--border2);background:var(--bg)}
+  .style-item.on{border-color:var(--text);background:var(--text);color:#fff}
+  .style-emoji{font-size:16px;width:20px;text-align:center}
+  .style-info{flex:1}
+  .style-name{font-size:12px;font-weight:600}
+  .style-desc{font-size:10px;opacity:.6;margin-top:1px}
+  .style-check{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+  .style-item.on .style-check{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);color:#fff}
+  .key-row{margin-bottom:14px}
+  .key-label{font-size:11px;color:var(--text3);margin-bottom:5px}
+  .key-input{width:100%;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:'Courier New',monospace;background:var(--white);color:var(--text);outline:none}
+  .key-input:focus{border-color:var(--border2)}
+  .gen-btn{width:100%;padding:13px;background:var(--text);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+  .gen-btn:hover{background:#2d2b28}
+  .gen-btn:disabled{background:var(--border2);cursor:not-allowed;color:var(--text3)}
+  .spinner-sm{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .gen-btn.loading .spinner-sm{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .out-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+  .out-card{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--white)}
+  .out-img-wrap{aspect-ratio:1;background:#f3f0ed;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .out-img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .out-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3);font-size:11px}
+  .out-placeholder-icon{font-size:24px;opacity:.3}
+  .out-loading{position:absolute;inset:0;background:rgba(243,240,237,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  .spinner-ring{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .8s linear infinite}
+  .out-loading-text{font-size:10px;color:var(--text3);text-align:center;line-height:1.5}
+  .out-meta{padding:10px 12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .out-meta-name{font-size:11px;font-weight:600;color:var(--text)}
+  .out-meta-sub{font-size:10px;color:var(--text3)}
+  .dl-btn{font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);cursor:pointer;color:var(--text2);text-decoration:none;transition:all .15s;display:none}
+  .dl-btn:hover{border-color:var(--border2);background:var(--white)}
+  .dl-btn.show{display:block}
+  .log-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;max-height:110px;overflow-y:auto}
+  .log-line{font-size:11px;line-height:1.9;color:var(--text3);font-family:'Courier New',monospace}
+  .log-line .t{color:var(--text3);margin-right:6px}
+  .log-line .ok{color:var(--success)}
+  .log-line .err{color:#c0392b}
+  .log-line .info{color:#7a6ef5}
+  .err-box{background:#fef0ee;border:1px solid #f5cec8;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#a03818;display:none;margin-top:10px}
+  .err-box.show{display:block}
+  @media(max-width:700px){.main{grid-template-columns:1fr}.out-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">✦</div>
+      <div class="brand-name">场景图生成器</div>
+    </div>
+    <div class="status-pill"><div class="status-dot"></div>fal.ai 已接入</div>
+  </div>
+
+  <div class="main">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head"><div class="card-head-dot"></div>API 配置</div>
+        <div class="card-body">
+          <div class="key-row">
+            <div class="key-label">fal.ai API Key</div>
+            <input class="key-input" id="apiKey" type="password" placeholder="fal-xxxxxxxxxx">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-head-dot"></div>产品上传</div>
+        <div class="card-body">
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📦</div>
+            <div class="upload-label">点击上传白底产品图</div>
+            <div class="upload-sub">PNG / JPG，建议正方形</div>
+            <input type="file" id="fileInput" accept="image/*" onchange="onUpload(event)">
+          </div>
+          <div class="ai-detect" id="aiDetect">
+            <div class="ai-detect-title">AI 识别结果</div>
+            <div class="tag-row" id="tagRow"></div>
+          </div>
+          <div class="styles-title">选择场景风格（最多3个）</div>
+          <div class="style-list" id="styleList">
+            <div class="style-item on" data-key="ins" onclick="toggleStyle(this)">
+              <div class="style-emoji">🤍</div>
+              <div class="style-info"><div class="style-name">INS 白净风</div><div class="style-desc">米色布纹 · 柔和漫射光</div></div>
+              <div class="style-check">✓</div>
+            </div>
+            <div class="style-item" data-key="outdoor" onclick="toggleStyle(this)">
+              <div class="style-emoji">🌿</div>
+              <div class="style-info"><div class="style-name">户外自然风</div><div class="style-desc">绿植 · 木质 · 自然光</div></div>
+              <div class="style-check"></div>
+            </div>
+            <div class="style-item" data-key="luxury" onclick="toggleStyle(this)">
+              <div class="style-emoji">✨</div>
+              <div class="style-info"><div class="style-name">轻奢精品风</div><div class="style-desc">大理石 · 金属 · 暗调</div></div>
+              <div class="style-check"></div>
+            </div>
+            <div class="style-item" data-key="lifestyle" onclick="toggleStyle(this)">
+              <div class="style-emoji">☕</div>
+              <div class="style-info"><div class="style-name">生活方式风</div><div class="style-desc">桌面 · 咖啡 · 日系暖调</div></div>
+              <div class="style-check"></div>
+            </div>
+          </div>
+          <button class="gen-btn" id="genBtn" onclick="generate()" disabled>
+            <div class="spinner-sm"></div>
+            <span class="btn-text">生成场景图</span>
+          </button>
+          <div class="err-box" id="errBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-head-dot" style="background:#c8502a"></div>生成结果</div>
+      <div class="card-body">
+        <div class="out-grid" id="outGrid">
+          <div class="out-card"><div class="out-img-wrap"><div class="out-placeholder"><div class="out-placeholder-icon">🖼</div><span>等待生成</span></div></div><div class="out-meta"><div><div class="out-meta-name">-</div><div class="out-meta-sub">未开始</div></div></div></div>
+          <div class="out-card"><div class="out-img-wrap"><div class="out-placeholder"><div class="out-placeholder-icon">🖼</div><span>等待生成</span></div></div><div class="out-meta"><div><div class="out-meta-name">-</div><div class="out-meta-sub">未开始</div></div></div></div>
+          <div class="out-card"><div class="out-img-wrap"><div class="out-placeholder"><div class="out-placeholder-icon">🖼</div><span>等待生成</span></div></div><div class="out-meta"><div><div class="out-meta-name">-</div><div class="out-meta-sub">未开始</div></div></div></div>
+        </div>
+        <div class="card-head" style="border:none;padding:0 0 8px;margin-bottom:8px;border-bottom:1px solid var(--border)"><div class="card-head-dot"></div>运行日志</div>
+        <div class="log-wrap" id="logWrap">
+          <div class="log-line"><span class="t">00.00</span>系统就绪，等待上传产品图...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STYLES = {
+  ins:       { name:'INS 白净风',  emoji:'🤍', prompt:'product photography, {p} on cream linen fabric background, soft diffused light, minimalist INS style, commercial product shot, clean white aesthetic, 8K, photorealistic' },
+  outdoor:   { name:'户外自然风',  emoji:'🌿', prompt:'product photography, {p} in outdoor natural setting, green plants bokeh background, wooden surface, warm natural sunlight, lifestyle product photography, 8K, photorealistic' },
+  luxury:    { name:'轻奢精品风',  emoji:'✨', prompt:'product photography, {p} on dark marble surface, moody luxury lighting, premium brand editorial style, metallic accent reflections, high contrast, 8K, photorealistic' },
+  lifestyle: { name:'生活方式风',  emoji:'☕', prompt:'product photography, {p} in cozy lifestyle setting, coffee shop morning light, warm wooden table, flat lay composition, warm tones, Japanese minimalist lifestyle, 8K, photorealistic' },
+};
+
+let uploadedB64 = null, detectedProduct = 'product', selectedStyles = ['ins'];
+let t0 = Date.now();
+function ts(){ return ((Date.now()-t0)/1000).toFixed(2).padStart(5,'0'); }
+function log(msg, cls=''){
+  const w=document.getElementById('logWrap');
+  const d=document.createElement('div'); d.className='log-line';
+  d.innerHTML=`<span class="t">${ts()}</span><span class="${cls}">${msg}</span>`;
+  w.appendChild(d); w.scrollTop=w.scrollHeight;
+}
+function showErr(msg){ const b=document.getElementById('errBox'); b.textContent=msg; b.classList.add('show'); }
+function hideErr(){ document.getElementById('errBox').classList.remove('show'); }
+
+function toggleStyle(el){
+  const key=el.dataset.key;
+  if(el.classList.contains('on')){
+    if(selectedStyles.length===1) return;
+    el.classList.remove('on'); el.querySelector('.style-check').textContent='';
+    selectedStyles=selectedStyles.filter(s=>s!==key);
+  } else {
+    if(selectedStyles.length>=3){
+      const first=document.querySelector('.style-item.on');
+      if(first){ first.classList.remove('on'); first.querySelector('.style-check').textContent=''; selectedStyles=selectedStyles.filter(s=>s!==first.dataset.key); }
+    }
+    el.classList.add('on'); el.querySelector('.style-check').textContent='✓'; selectedStyles.push(key);
+  }
+}
+
+function onUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  const area=document.getElementById('uploadArea');
+  area.classList.add('has-img'); area.innerHTML='';
+  const img=document.createElement('img'); area.appendChild(img);
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    img.src=ev.target.result;
+    uploadedB64=ev.target.result.split(',')[1];
+    log(`图片已上传: ${file.name}`,'info');
+    log('AI 识别产品中...','info');
+    detectProduct();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function detectProduct(){
+  try {
+    const res=await fetch('/api/detect',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ imageBase64: uploadedB64 }) });
+    const data=await res.json();
+    detectedProduct=data.description||'product';
+    log(`识别完成: ${detectedProduct}`,'ok');
+    const det=document.getElementById('aiDetect'); det.classList.add('show');
+    document.getElementById('tagRow').innerHTML=`<span class="tag cat">✓ ${detectedProduct}</span>`;
+  } catch(e){ detectedProduct='product'; log('识别跳过，使用默认描述',''); }
+  document.getElementById('genBtn').disabled=false;
+}
+
+function buildCards(styles){
+  const grid=document.getElementById('outGrid'); grid.innerHTML='';
+  styles.forEach((key,i)=>{
+    const s=STYLES[key];
+    const c=document.createElement('div'); c.className='out-card'; c.id=`card-${i}`;
+    c.innerHTML=`<div class="out-img-wrap" id="imgwrap-${i}"><div class="out-loading" id="loading-${i}"><div class="spinner-ring"></div><div class="out-loading-text">生成中<br/>${s.name}</div></div></div><div class="out-meta"><div><div class="out-meta-name">${s.emoji} ${s.name}</div><div class="out-meta-sub" id="sub-${i}">生成中...</div></div><a class="dl-btn" id="dl-${i}" target="_blank">下载</a></div>`;
+    grid.appendChild(c);
+  });
+}
+
+async function generateOne(styleKey, index){
+  const s=STYLES[styleKey];
+  const prompt=s.prompt.replace('{p}', detectedProduct);
+  const falKey=document.getElementById('apiKey').value.trim();
+  log(`[${index+1}] 请求生成: ${s.name}`,'info');
+  try {
+    const res=await fetch('/api/generate',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ prompt, falKey }) });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'生成失败');
+    log(`[${index+1}] ✓ ${s.name} 完成`,'ok');
+    const wrap=document.getElementById(`imgwrap-${index}`);
+    document.getElementById(`loading-${index}`)?.remove();
+    const img=document.createElement('img'); img.src=data.url; wrap.appendChild(img);
+    document.getElementById(`sub-${index}`).textContent='生成完成';
+    const dl=document.getElementById(`dl-${index}`); dl.href=data.url; dl.classList.add('show');
+  } catch(e){
+    log(`[${index+1}] ✗ ${s.name}: ${e.message}`,'err');
+    const l=document.getElementById(`loading-${index}`);
+    if(l) l.innerHTML=`<div style="font-size:11px;color:#c0392b;padding:8px;text-align:center">${e.message}</div>`;
+    document.getElementById(`sub-${index}`).textContent='失败';
+  }
+}
+
+async function generate(){
+  hideErr();
+  if(!document.getElementById('apiKey').value.trim()){ showErr('请填写 fal.ai API Key'); return; }
+  if(!uploadedB64){ showErr('请先上传产品图'); return; }
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true; btn.classList.add('loading'); btn.querySelector('.btn-text').textContent='生成中';
+  const styles=selectedStyles.slice(0,3);
+  buildCards(styles);
+  log(`开始并行生成 ${styles.length} 张...`,'info');
+  await Promise.all(styles.map((s,i)=>generateOne(s,i)));
+  log('全部完成！','ok');
+  btn.disabled=false; btn.classList.remove('loading'); btn.querySelector('.btn-text').textContent='重新生成';
+}
+</script>
+</body>
+</html>
